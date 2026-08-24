@@ -37,6 +37,8 @@ const ACTION_LABELS: Record<string, string> = {
   contact_updated: "Müştəri dəyişdirildi",
   contact_deleted: "Müştəri silindi",
   contact_note_added: "Qeyd əlavə olundu",
+  contact_note_updated: "Qeyd dəyişdirildi",
+  contact_note_deleted: "Qeyd silindi",
   crm_user_created: "İstifadəçi yaradıldı",
   crm_user_updated: "İstifadəçi dəyişdirildi",
   crm_user_deleted: "İstifadəçi silindi"
