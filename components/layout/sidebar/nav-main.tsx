@@ -13,6 +13,7 @@ import {
   LayoutDashboardIcon,
   ScrollTextIcon,
   ShieldIcon,
+  Trash2Icon,
   TrendingUpIcon,
   UsersIcon,
   type LucideIcon
@@ -27,7 +28,7 @@ type NavItem = {
   title: string;
   href: string;
   icon: LucideIcon;
-  section: CrmSection | "users";
+  section: CrmSection | "users" | "trash";
 };
 
 const NAV_ITEMS: NavItem[] = [
@@ -36,6 +37,7 @@ const NAV_ITEMS: NavItem[] = [
   { title: "Müştərilər", href: "/dashboard/contacts", icon: UsersIcon, section: "contacts" },
   { title: "Hesabatlar", href: "/dashboard/reports", icon: TrendingUpIcon, section: "reports" },
   { title: "İstifadəçilər", href: "/dashboard/users", icon: ShieldIcon, section: "users" },
+  { title: "Zibil qutusu", href: "/dashboard/trash", icon: Trash2Icon, section: "trash" },
   { title: "Audit log", href: "/dashboard/audit", icon: ScrollTextIcon, section: "audit" }
 ];
 
@@ -48,7 +50,7 @@ export function NavMain() {
   }, []);
 
   const visibleItems = NAV_ITEMS.filter((item) =>
-    item.section === "users"
+    item.section === "users" || item.section === "trash"
       ? user?.role === "superadmin"
       : canAccess(user, item.section),
   );

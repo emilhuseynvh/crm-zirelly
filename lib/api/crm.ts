@@ -192,6 +192,22 @@ export const crmApi = api.injectEndpoints({
       query: (id) => ({ url: `crm/users/${id}`, method: "DELETE" }),
       invalidatesTags: ["Users"]
     }),
+    getTrashedContacts: build.query<Paginated<Contact>, { page?: number }>({
+      query: (f) => `crm/trash/contacts?${buildParams({ ...f }).toString()}`,
+      providesTags: ["Contacts"]
+    }),
+    getTrashedOrders: build.query<Paginated<CrmOrder>, { page?: number }>({
+      query: (f) => `crm/trash/orders?${buildParams({ ...f }).toString()}`,
+      providesTags: ["Orders"]
+    }),
+    restoreContact: build.mutation<{ data: Contact }, number>({
+      query: (id) => ({ url: `crm/trash/contacts/${id}/restore`, method: "POST" }),
+      invalidatesTags: ["Contacts", "Report"]
+    }),
+    restoreOrder: build.mutation<{ data: CrmOrder }, number>({
+      query: (id) => ({ url: `crm/trash/orders/${id}/restore`, method: "POST" }),
+      invalidatesTags: ["Orders", "Report"]
+    }),
     getAuditLogs: build.query<Paginated<AuditLogEntry>, AuditFilter>({
       query: (filter) => `crm/audit-logs?${buildParams({ ...filter }).toString()}`,
       providesTags: ["Audit"]
@@ -226,6 +242,10 @@ export const {
   useCreateCrmUserMutation,
   useUpdateCrmUserMutation,
   useDeleteCrmUserMutation,
+  useGetTrashedContactsQuery,
+  useGetTrashedOrdersQuery,
+  useRestoreContactMutation,
+  useRestoreOrderMutation,
   useGetAuditLogsQuery,
   useGetProductsQuery
 } = crmApi;

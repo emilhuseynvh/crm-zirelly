@@ -46,7 +46,7 @@ export default function ContactsPage() {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [page, setPage] = useState(1);
-  const [sort, setSort] = useState<NonNullable<ContactsFilter["sort"]>>("id");
+  const [sortChoice, setSortChoice] = useState("id");
   const [exporting, setExporting] = useState(false);
   const [isSuperadmin, setIsSuperadmin] = useState(false);
 
@@ -66,10 +66,10 @@ export default function ContactsPage() {
       has_orders: hasOrders,
       from,
       to,
-      sort,
-      dir: "desc"
+      sort: (sortChoice === "id_asc" ? "id" : sortChoice) as ContactsFilter["sort"],
+      dir: sortChoice === "id_asc" ? "asc" : "desc"
     }),
-    [page, search, channel, createdVia, hasOrders, from, to, sort]
+    [page, search, channel, createdVia, hasOrders, from, to, sortChoice]
   );
 
   const { data, isLoading, isFetching } = useGetContactsQuery(filter);
@@ -232,9 +232,9 @@ export default function ContactsPage() {
             />
 
             <Select
-              value={sort}
+              value={sortChoice}
               onValueChange={(v) => {
-                setSort(v as NonNullable<ContactsFilter["sort"]>);
+                setSortChoice(v);
                 setPage(1);
               }}>
               <SelectTrigger className="w-48">
@@ -242,6 +242,7 @@ export default function ContactsPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="id">Ən yeni</SelectItem>
+                <SelectItem value="id_asc">Ən köhnə</SelectItem>
                 <SelectItem value="orders_total">Ən çox alış</SelectItem>
                 <SelectItem value="orders_count">Ən çox sifariş</SelectItem>
                 <SelectItem value="last_order_at">Son sifarişə görə</SelectItem>
