@@ -1,11 +1,16 @@
-export const DEFAULT_THEME = {
+export interface ThemeType {
+  preset: string;
+  radius: string;
+  scale: string;
+  contentLayout: string;
+}
+
+export const DEFAULT_THEME: ThemeType = {
   preset: "underground",
   radius: "md",
   scale: "none",
   contentLayout: "full"
-} as const;
-
-export type ThemeType = typeof DEFAULT_THEME;
+};
 
 export const THEMES = [
   {

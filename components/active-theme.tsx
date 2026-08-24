@@ -35,13 +35,10 @@ export function ActiveThemeProvider({
     const body = document.body;
 
     setThemeCookie("theme_radius", theme.radius);
-    body.setAttribute("data-theme-radius", theme.radius);
 
     if (theme.radius != "default") {
-      setThemeCookie("theme_preset", theme.radius);
       body.setAttribute("data-theme-radius", theme.radius);
     } else {
-      setThemeCookie("theme_preset", null);
       body.removeAttribute("data-theme-radius");
     }
 
