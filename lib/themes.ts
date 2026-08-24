@@ -1,6 +1,6 @@
 export const DEFAULT_THEME = {
-  preset: "default",
-  radius: "default",
+  preset: "underground",
+  radius: "md",
   scale: "none",
   contentLayout: "full"
 } as const;

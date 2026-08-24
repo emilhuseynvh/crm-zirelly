@@ -1,8 +1,19 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -20,9 +31,19 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
-import { useCreateContactMutation, useUpdateContactMutation } from "@/lib/api/crm";
+import {
+  useCreateContactMutation,
+  useLazyCheckContactPhoneQuery,
+  useUpdateContactMutation
+} from "@/lib/api/crm";
 import type { Channel, Contact } from "@/lib/api/types";
 import { CHANNEL_LABELS } from "@/lib/crm";
+
+interface DuplicateInfo {
+  id: number;
+  name: string;
+  phone: string;
+}
 
 interface ContactFormDialogProps {
   contact?: Contact;
@@ -31,6 +52,7 @@ interface ContactFormDialogProps {
 }
 
 export function ContactFormDialog({ contact, trigger, onSaved }: ContactFormDialogProps) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [surname, setSurname] = useState("");
@@ -38,9 +60,11 @@ export function ContactFormDialog({ contact, trigger, onSaved }: ContactFormDial
   const [email, setEmail] = useState("");
   const [birthDate, setBirthDate] = useState("");
   const [channel, setChannel] = useState<Channel>("instagram");
+  const [duplicate, setDuplicate] = useState<DuplicateInfo | null>(null);
 
   const [createContact, { isLoading: creating }] = useCreateContactMutation();
   const [updateContact, { isLoading: updating }] = useUpdateContactMutation();
+  const [checkPhone, { isLoading: checking }] = useLazyCheckContactPhoneQuery();
 
   useEffect(() => {
     if (!open) return;
@@ -63,6 +87,22 @@ export function ContactFormDialog({ contact, trigger, onSaved }: ContactFormDial
       birth_date: birthDate || null,
       channel
     };
+
+    if (payload.phone) {
+      try {
+        const result = await checkPhone({
+          phone: payload.phone,
+          except: contact?.id
+        }).unwrap();
+
+        if (result.data) {
+          setDuplicate(result.data);
+          return;
+        }
+      } catch {
+        // yoxlama alınmasa, son sədd backend-dəki dublikat qorumasıdır
+      }
+    }
 
     try {
       const result = contact
@@ -102,7 +142,7 @@ export function ContactFormDialog({ contact, trigger, onSaved }: ContactFormDial
             <Input
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              placeholder="+994775387707"
+              placeholder="+994512522410"
             />
           </div>
 
@@ -137,11 +177,37 @@ export function ContactFormDialog({ contact, trigger, onSaved }: ContactFormDial
             </div>
           </div>
 
-          <Button type="submit" className="w-full" disabled={creating || updating}>
-            {creating || updating ? "Yadda saxlanır..." : "Yadda saxla"}
+          <Button type="submit" className="w-full" disabled={creating || updating || checking}>
+            {creating || updating || checking ? "Yadda saxlanır..." : "Yadda saxla"}
           </Button>
         </form>
       </DialogContent>
+
+      <AlertDialog open={duplicate !== null} onOpenChange={(v) => !v && setDuplicate(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Bu nömrə ilə müştəri artıq mövcuddur</AlertDialogTitle>
+            <AlertDialogDescription>
+              <b>
+                #{duplicate?.id} — {duplicate?.name}
+              </b>{" "}
+              ({duplicate?.phone}) eyni telefon nömrəsi ilə qeydiyyatdadır. Dublikat
+              yaratmamaq üçün mövcud müştəri kartından istifadə edin.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Bağla</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setDuplicate(null);
+                setOpen(false);
+                router.push(`/dashboard/contacts/${duplicate?.id}`);
+              }}>
+              Müştəriyə keç
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }

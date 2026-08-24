@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
-import { DownloadIcon, EyeIcon, FilterXIcon, PlusIcon, SearchIcon } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { DownloadIcon, EyeIcon, FilterXIcon, PencilIcon, PlusIcon, SearchIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -25,32 +25,76 @@ import {
   TableRow
 } from "@/components/ui/table";
 import { PageHeader } from "@/components/admin/page-header";
+import { ConfirmDelete } from "@/components/admin/confirm-delete";
 import { ContactFormDialog } from "@/components/crm/contact-form-dialog";
 import { API_BASE, getToken } from "@/lib/api/base";
-import { buildParams, useGetContactsQuery, type ContactsFilter } from "@/lib/api/crm";
-import type { Channel } from "@/lib/api/types";
-import { CHANNEL_LABELS, formatDate, formatMoney } from "@/lib/crm";
+import {
+  buildParams,
+  useDeleteContactMutation,
+  useGetContactsQuery,
+  type ContactsFilter
+} from "@/lib/api/crm";
+import type { Channel, Contact } from "@/lib/api/types";
+import { CHANNEL_LABELS, formatDate, formatMoney, getStoredUser } from "@/lib/crm";
 
 export default function ContactsPage() {
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [channel, setChannel] = useState<Channel | "">("");
+  const [createdVia, setCreatedVia] = useState<"site" | "crm" | "">("");
+  const [hasOrders, setHasOrders] = useState<"yes" | "no" | "">("");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
   const [page, setPage] = useState(1);
   const [sort, setSort] = useState<NonNullable<ContactsFilter["sort"]>>("id");
   const [exporting, setExporting] = useState(false);
+  const [isSuperadmin, setIsSuperadmin] = useState(false);
+
+  const [deleteContact] = useDeleteContactMutation();
+
+  useEffect(() => {
+    setIsSuperadmin(getStoredUser()?.role === "superadmin");
+  }, []);
 
   const filter: ContactsFilter = useMemo(
-    () => ({ page, per_page: 20, search, channel, sort, dir: "desc" }),
-    [page, search, channel, sort]
+    () => ({
+      page,
+      per_page: 20,
+      search,
+      channel,
+      created_via: createdVia,
+      has_orders: hasOrders,
+      from,
+      to,
+      sort,
+      dir: "desc"
+    }),
+    [page, search, channel, createdVia, hasOrders, from, to, sort]
   );
 
   const { data, isLoading, isFetching } = useGetContactsQuery(filter);
+
+  const handleDelete = async (contact: Contact) => {
+    try {
+      await deleteContact(contact.id).unwrap();
+      toast.success(`#${contact.id} arxivləşdirildi.`);
+    } catch (err: any) {
+      toast.error(err?.data?.message ?? "Silinmə alınmadı.");
+    }
+  };
 
   const handleExport = async () => {
     setExporting(true);
 
     try {
-      const params = buildParams({ search, channel });
+      const params = buildParams({
+        search,
+        channel,
+        created_via: createdVia,
+        has_orders: hasOrders,
+        from,
+        to
+      });
       const token = getToken();
       const response = await fetch(`${API_BASE}/crm/contacts/export?${params.toString()}`, {
         headers: {
@@ -136,6 +180,58 @@ export default function ContactsPage() {
             </Select>
 
             <Select
+              value={createdVia || "all"}
+              onValueChange={(v) => {
+                setCreatedVia(v === "all" ? "" : (v as "site" | "crm"));
+                setPage(1);
+              }}>
+              <SelectTrigger className="w-36">
+                <SelectValue placeholder="Tip" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Bütün tiplər</SelectItem>
+                <SelectItem value="site">Saytdan</SelectItem>
+                <SelectItem value="crm">CRM-dən</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={hasOrders || "all"}
+              onValueChange={(v) => {
+                setHasOrders(v === "all" ? "" : (v as "yes" | "no"));
+                setPage(1);
+              }}>
+              <SelectTrigger className="w-44">
+                <SelectValue placeholder="Sifariş" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Hamısı</SelectItem>
+                <SelectItem value="yes">Sifarişi olanlar</SelectItem>
+                <SelectItem value="no">Sifarişi olmayanlar</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Input
+              type="date"
+              className="w-36"
+              value={from}
+              onChange={(e) => {
+                setFrom(e.target.value);
+                setPage(1);
+              }}
+            />
+            <span className="text-muted-foreground">–</span>
+            <Input
+              type="date"
+              className="w-36"
+              value={to}
+              onChange={(e) => {
+                setTo(e.target.value);
+                setPage(1);
+              }}
+            />
+
+            <Select
               value={sort}
               onValueChange={(v) => {
                 setSort(v as NonNullable<ContactsFilter["sort"]>);
@@ -152,7 +248,7 @@ export default function ContactsPage() {
               </SelectContent>
             </Select>
 
-            {(search || channel) && (
+            {(search || channel || createdVia || hasOrders || from || to) && (
               <Button
                 type="button"
                 variant="ghost"
@@ -161,6 +257,10 @@ export default function ContactsPage() {
                   setSearch("");
                   setSearchInput("");
                   setChannel("");
+                  setCreatedVia("");
+                  setHasOrders("");
+                  setFrom("");
+                  setTo("");
                   setPage(1);
                 }}>
                 <FilterXIcon />
@@ -183,16 +283,17 @@ export default function ContactsPage() {
                 <TableHead>Telefon</TableHead>
                 <TableHead>E-poçt</TableHead>
                 <TableHead>Mənbə</TableHead>
+                <TableHead>Tip</TableHead>
                 <TableHead className="text-right">Sifariş</TableHead>
                 <TableHead className="text-right">Ümumi alış</TableHead>
                 <TableHead>Son sifariş</TableHead>
-                <TableHead className="w-12" />
+                <TableHead className="w-28" />
               </TableRow>
             </TableHeader>
             <TableBody className={isFetching ? "opacity-60" : undefined}>
               {isLoading && (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-muted-foreground py-8 text-center">
+                  <TableCell colSpan={10} className="text-muted-foreground py-8 text-center">
                     Yüklənir...
                   </TableCell>
                 </TableRow>
@@ -208,6 +309,11 @@ export default function ContactsPage() {
                   <TableCell>
                     <Badge variant="secondary">{CHANNEL_LABELS[contact.channel]}</Badge>
                   </TableCell>
+                  <TableCell>
+                    <Badge variant={contact.created_via === "site" ? "default" : "outline"}>
+                      {contact.created_via === "site" ? "Saytdan" : "CRM-dən"}
+                    </Badge>
+                  </TableCell>
                   <TableCell className="text-right">{contact.orders_count}</TableCell>
                   <TableCell className="text-right font-medium">
                     {formatMoney(contact.orders_total)}
@@ -216,17 +322,34 @@ export default function ContactsPage() {
                     {formatDate(contact.last_order_at)}
                   </TableCell>
                   <TableCell>
-                    <Button variant="ghost" size="icon" asChild>
-                      <Link href={`/dashboard/contacts/${contact.id}`}>
-                        <EyeIcon />
-                      </Link>
-                    </Button>
+                    <div className="flex items-center">
+                      <Button variant="ghost" size="icon" asChild>
+                        <Link href={`/dashboard/contacts/${contact.id}`}>
+                          <EyeIcon />
+                        </Link>
+                      </Button>
+                      <ContactFormDialog
+                        contact={contact}
+                        trigger={
+                          <Button variant="ghost" size="icon">
+                            <PencilIcon />
+                          </Button>
+                        }
+                      />
+                      {isSuperadmin && (
+                        <ConfirmDelete
+                          onConfirm={() => handleDelete(contact)}
+                          title={`#${contact.id} — ${contact.name} arxivləşdirilsin?`}
+                          description="Müştəri siyahıdan çıxarılacaq (soft delete), sifarişləri bazada qalır."
+                        />
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
               {data && data.data.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-muted-foreground py-8 text-center">
+                  <TableCell colSpan={10} className="text-muted-foreground py-8 text-center">
                     Müştəri tapılmadı.
                   </TableCell>
                 </TableRow>

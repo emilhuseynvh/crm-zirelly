@@ -22,6 +22,8 @@ export interface ContactsFilter extends DateRange {
   per_page?: number;
   search?: string;
   channel?: Channel | "";
+  created_via?: "site" | "crm" | "";
+  has_orders?: "yes" | "no" | "";
   sort?: "id" | "name" | "orders_count" | "orders_total" | "last_order_at" | "created_at";
   dir?: "asc" | "desc";
 }
@@ -93,6 +95,12 @@ export const crmApi = api.injectEndpoints({
     getReport: build.query<{ data: ReportSummary }, DateRange>({
       query: (range) => `crm/dashboard?${buildParams({ ...range }).toString()}`,
       providesTags: ["Report"]
+    }),
+    checkContactPhone: build.query<
+      { data: { id: number; name: string; phone: string; email: string | null } | null },
+      { phone: string; except?: number }
+    >({
+      query: (args) => `crm/contacts/check-phone?${buildParams({ ...args }).toString()}`
     }),
     getContacts: build.query<Paginated<Contact>, ContactsFilter>({
       query: (filter) => `crm/contacts?${buildParams({ ...filter }).toString()}`,
@@ -182,6 +190,7 @@ export const crmApi = api.injectEndpoints({
 export const {
   useGetReportQuery,
   useGetContactsQuery,
+  useLazyCheckContactPhoneQuery,
   useGetContactQuery,
   useCreateContactMutation,
   useUpdateContactMutation,

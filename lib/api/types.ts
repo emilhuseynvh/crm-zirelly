@@ -39,6 +39,7 @@ export interface Contact {
   email: string | null;
   birth_date: string | null;
   channel: Channel;
+  created_via: "site" | "crm";
   orders_count: number;
   orders_total: number;
   first_order_at: string | null;
