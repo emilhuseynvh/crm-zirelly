@@ -21,6 +21,7 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useMeQuery } from "@/lib/api/auth";
 import { getStoredUser, canAccess } from "@/lib/crm";
 import type { CrmSection, User } from "@/lib/api/types";
 
@@ -43,11 +44,14 @@ const NAV_ITEMS: NavItem[] = [
 
 export function NavMain() {
   const pathname = usePathname();
-  const [user, setUser] = useState<User | null>(null);
+  const { data } = useMeQuery();
+  const [stored, setStored] = useState<User | null>(null);
 
   useEffect(() => {
-    setUser(getStoredUser());
+    setStored(getStoredUser());
   }, []);
+
+  const user = data?.data ?? stored;
 
   const visibleItems = NAV_ITEMS.filter((item) =>
     item.section === "users" || item.section === "trash"
