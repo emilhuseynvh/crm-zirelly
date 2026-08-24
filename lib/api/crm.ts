@@ -216,6 +216,30 @@ export const crmApi = api.injectEndpoints({
       query: (id) => ({ url: `crm/trash/orders/${id}`, method: "DELETE" }),
       invalidatesTags: ["Orders"]
     }),
+    getTrashedUsers: build.query<Paginated<User>, { page?: number }>({
+      query: (f) => `crm/trash/users?${buildParams({ ...f }).toString()}`,
+      providesTags: ["Users"]
+    }),
+    restoreUser: build.mutation<{ data: User }, number>({
+      query: (id) => ({ url: `crm/trash/users/${id}/restore`, method: "POST" }),
+      invalidatesTags: ["Users"]
+    }),
+    forceDeleteUser: build.mutation<{ message: string }, number>({
+      query: (id) => ({ url: `crm/trash/users/${id}`, method: "DELETE" }),
+      invalidatesTags: ["Users"]
+    }),
+    getTrashedNotes: build.query<Paginated<ContactNote>, { page?: number }>({
+      query: (f) => `crm/trash/notes?${buildParams({ ...f }).toString()}`,
+      providesTags: ["Contacts"]
+    }),
+    restoreNote: build.mutation<{ data: ContactNote }, number>({
+      query: (id) => ({ url: `crm/trash/notes/${id}/restore`, method: "POST" }),
+      invalidatesTags: ["Contacts"]
+    }),
+    forceDeleteNote: build.mutation<{ message: string }, number>({
+      query: (id) => ({ url: `crm/trash/notes/${id}`, method: "DELETE" }),
+      invalidatesTags: ["Contacts"]
+    }),
     getAuditLogs: build.query<Paginated<AuditLogEntry>, AuditFilter>({
       query: (filter) => `crm/audit-logs?${buildParams({ ...filter }).toString()}`,
       providesTags: ["Audit"]
@@ -256,6 +280,12 @@ export const {
   useRestoreOrderMutation,
   useForceDeleteContactMutation,
   useForceDeleteOrderMutation,
+  useGetTrashedUsersQuery,
+  useRestoreUserMutation,
+  useForceDeleteUserMutation,
+  useGetTrashedNotesQuery,
+  useRestoreNoteMutation,
+  useForceDeleteNoteMutation,
   useGetAuditLogsQuery,
   useGetProductsQuery
 } = crmApi;

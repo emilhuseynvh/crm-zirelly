@@ -187,17 +187,15 @@ export default function UsersPage() {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center">
-                      {(user.role !== "superadmin" || user.id === myId) && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => {
-                            setEditing(user);
-                            setOpen(true);
-                          }}>
-                          <PencilIcon />
-                        </Button>
-                      )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          setEditing(user);
+                          setOpen(true);
+                        }}>
+                        <PencilIcon />
+                      </Button>
                       {user.role !== "superadmin" && user.id !== myId && (
                         <ConfirmDelete
                           onConfirm={() => handleDelete(user)}
@@ -253,6 +251,7 @@ export default function UsersPage() {
               />
             </div>
 
+            {editing?.role !== "superadmin" && (
             <div className="space-y-1.5">
               <Label>Bölmə icazələri</Label>
               <div className="grid grid-cols-2 gap-2 rounded-md border p-3">
@@ -267,8 +266,9 @@ export default function UsersPage() {
                 ))}
               </div>
             </div>
+            )}
 
-            {editing && (
+            {editing && editing.id !== myId && (
               <div className="flex items-center gap-2">
                 <Switch checked={isActive} onCheckedChange={setIsActive} />
                 <Label>Aktiv</Label>

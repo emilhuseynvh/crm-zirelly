@@ -45,7 +45,11 @@ const ACTION_LABELS: Record<string, string> = {
   contact_note_deleted: "Qeyd silindi",
   crm_user_created: "İstifadəçi yaradıldı",
   crm_user_updated: "İstifadəçi dəyişdirildi",
-  crm_user_deleted: "İstifadəçi silindi"
+  crm_user_deleted: "İstifadəçi silindi",
+  crm_user_restored: "İstifadəçi bərpa olundu",
+  crm_user_force_deleted: "İstifadəçi tam silindi",
+  contact_note_restored: "Qeyd bərpa olundu",
+  contact_note_force_deleted: "Qeyd tam silindi"
 };
 
 export default function AuditPage() {

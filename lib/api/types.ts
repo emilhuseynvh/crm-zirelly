@@ -29,6 +29,7 @@ export interface ContactNote {
   author: string | null;
   author_id: number | null;
   created_at: string;
+  contact?: { id: number; name: string };
 }
 
 export interface Contact {

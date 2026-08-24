@@ -21,11 +21,17 @@ import {
 import { PageHeader } from "@/components/admin/page-header";
 import {
   useForceDeleteContactMutation,
+  useForceDeleteNoteMutation,
   useForceDeleteOrderMutation,
+  useForceDeleteUserMutation,
   useGetTrashedContactsQuery,
+  useGetTrashedNotesQuery,
   useGetTrashedOrdersQuery,
+  useGetTrashedUsersQuery,
   useRestoreContactMutation,
-  useRestoreOrderMutation
+  useRestoreNoteMutation,
+  useRestoreOrderMutation,
+  useRestoreUserMutation
 } from "@/lib/api/crm";
 import {
   CHANNEL_LABELS,
@@ -40,6 +46,8 @@ export default function TrashPage() {
   const [isSuperadmin, setIsSuperadmin] = useState<boolean | null>(null);
   const [contactsPage, setContactsPage] = useState(1);
   const [ordersPage, setOrdersPage] = useState(1);
+  const [usersPage, setUsersPage] = useState(1);
+  const [notesPage, setNotesPage] = useState(1);
 
   useEffect(() => {
     setIsSuperadmin(getStoredUser()?.role === "superadmin");
@@ -53,11 +61,32 @@ export default function TrashPage() {
     { page: ordersPage },
     { skip: isSuperadmin !== true }
   );
+  const { data: users, isLoading: usersLoading } = useGetTrashedUsersQuery(
+    { page: usersPage },
+    { skip: isSuperadmin !== true }
+  );
+  const { data: notes, isLoading: notesLoading } = useGetTrashedNotesQuery(
+    { page: notesPage },
+    { skip: isSuperadmin !== true }
+  );
 
   const [restoreContact] = useRestoreContactMutation();
   const [restoreOrder] = useRestoreOrderMutation();
   const [forceDeleteContact] = useForceDeleteContactMutation();
   const [forceDeleteOrder] = useForceDeleteOrderMutation();
+  const [restoreUser] = useRestoreUserMutation();
+  const [forceDeleteUser] = useForceDeleteUserMutation();
+  const [restoreNote] = useRestoreNoteMutation();
+  const [forceDeleteNote] = useForceDeleteNoteMutation();
+
+  const act = async (fn: () => Promise<unknown>, okMessage: string) => {
+    try {
+      await fn();
+      toast.success(okMessage);
+    } catch (err: any) {
+      toast.error(err?.data?.message ?? "Əməliyyat alınmadı.");
+    }
+  };
 
   const handleForceDeleteContact = async (id: number) => {
     try {
@@ -113,6 +142,12 @@ export default function TrashPage() {
           </TabsTrigger>
           <TabsTrigger value="orders">
             Sifarişlər {orders ? `(${orders.meta.total})` : ""}
+          </TabsTrigger>
+          <TabsTrigger value="users">
+            İstifadəçilər {users ? `(${users.meta.total})` : ""}
+          </TabsTrigger>
+          <TabsTrigger value="notes">
+            Qeydlər {notes ? `(${notes.meta.total})` : ""}
           </TabsTrigger>
         </TabsList>
 
@@ -263,6 +298,163 @@ export default function TrashPage() {
                   page={ordersPage}
                   lastPage={orders.meta.last_page}
                   onChange={setOrdersPage}
+                />
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="users">
+          <Card>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-16">#</TableHead>
+                    <TableHead>Ad</TableHead>
+                    <TableHead>E-poçt</TableHead>
+                    <TableHead>Rol</TableHead>
+                    <TableHead className="w-44" />
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {usersLoading && (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-muted-foreground py-8 text-center">
+                        Yüklənir...
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  {users?.data.map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell className="font-medium">#{user.id}</TableCell>
+                      <TableCell>{user.name}</TableCell>
+                      <TableCell>{user.email}</TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">
+                          {user.role === "superadmin" ? "Superadmin" : "Admin"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                              act(
+                                () => restoreUser(user.id).unwrap(),
+                                `İstifadəçi #${user.id} bərpa olundu.`
+                              )
+                            }>
+                            <ArchiveRestoreIcon />
+                            Bərpa et
+                          </Button>
+                          <ConfirmDelete
+                            onConfirm={() =>
+                              act(
+                                () => forceDeleteUser(user.id).unwrap(),
+                                `İstifadəçi #${user.id} tam silindi.`
+                              )
+                            }
+                            title={`İstifadəçi #${user.id} TAM silinsin?`}
+                            description="Bu əməliyyat geri qaytarıla bilməz."
+                          />
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {users && users.data.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-muted-foreground py-8 text-center">
+                        Zibil qutusu boşdur.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+
+              {users && users.meta.last_page > 1 && (
+                <Pagination
+                  page={usersPage}
+                  lastPage={users.meta.last_page}
+                  onChange={setUsersPage}
+                />
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="notes">
+          <Card>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Qeyd</TableHead>
+                    <TableHead>Müştəri</TableHead>
+                    <TableHead>Müəllif</TableHead>
+                    <TableHead>Tarix</TableHead>
+                    <TableHead className="w-44" />
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {notesLoading && (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-muted-foreground py-8 text-center">
+                        Yüklənir...
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  {notes?.data.map((note) => (
+                    <TableRow key={note.id}>
+                      <TableCell className="max-w-72 truncate">{note.body}</TableCell>
+                      <TableCell>{note.contact?.name ?? "—"}</TableCell>
+                      <TableCell>{note.author ?? "—"}</TableCell>
+                      <TableCell className="text-muted-foreground text-sm">
+                        {formatDateTime(note.created_at)}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                              act(
+                                () => restoreNote(note.id).unwrap(),
+                                "Qeyd bərpa olundu."
+                              )
+                            }>
+                            <ArchiveRestoreIcon />
+                            Bərpa et
+                          </Button>
+                          <ConfirmDelete
+                            onConfirm={() =>
+                              act(
+                                () => forceDeleteNote(note.id).unwrap(),
+                                "Qeyd tam silindi."
+                              )
+                            }
+                            title="Qeyd TAM silinsin?"
+                            description="Bu əməliyyat geri qaytarıla bilməz."
+                          />
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {notes && notes.data.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-muted-foreground py-8 text-center">
+                        Zibil qutusu boşdur.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+
+              {notes && notes.meta.last_page > 1 && (
+                <Pagination
+                  page={notesPage}
+                  lastPage={notes.meta.last_page}
+                  onChange={setNotesPage}
                 />
               )}
             </CardContent>
