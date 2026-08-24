@@ -208,6 +208,14 @@ export const crmApi = api.injectEndpoints({
       query: (id) => ({ url: `crm/trash/orders/${id}/restore`, method: "POST" }),
       invalidatesTags: ["Orders", "Report"]
     }),
+    forceDeleteContact: build.mutation<{ message: string }, number>({
+      query: (id) => ({ url: `crm/trash/contacts/${id}`, method: "DELETE" }),
+      invalidatesTags: ["Contacts"]
+    }),
+    forceDeleteOrder: build.mutation<{ message: string }, number>({
+      query: (id) => ({ url: `crm/trash/orders/${id}`, method: "DELETE" }),
+      invalidatesTags: ["Orders"]
+    }),
     getAuditLogs: build.query<Paginated<AuditLogEntry>, AuditFilter>({
       query: (filter) => `crm/audit-logs?${buildParams({ ...filter }).toString()}`,
       providesTags: ["Audit"]
@@ -246,6 +254,8 @@ export const {
   useGetTrashedOrdersQuery,
   useRestoreContactMutation,
   useRestoreOrderMutation,
+  useForceDeleteContactMutation,
+  useForceDeleteOrderMutation,
   useGetAuditLogsQuery,
   useGetProductsQuery
 } = crmApi;

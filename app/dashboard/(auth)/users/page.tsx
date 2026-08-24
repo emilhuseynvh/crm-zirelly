@@ -34,7 +34,7 @@ import {
   useUpdateCrmUserMutation
 } from "@/lib/api/crm";
 import type { CrmSection, User } from "@/lib/api/types";
-import { SECTION_LABELS, formatDateTime } from "@/lib/crm";
+import { SECTION_LABELS, formatDateTime, getStoredUser } from "@/lib/crm";
 
 const ALL_SECTIONS = Object.keys(SECTION_LABELS) as CrmSection[];
 
@@ -51,6 +51,11 @@ export default function UsersPage() {
   const [password, setPassword] = useState("");
   const [permissions, setPermissions] = useState<CrmSection[]>(["dashboard", "orders"]);
   const [isActive, setIsActive] = useState(true);
+  const [myId, setMyId] = useState<number | null>(null);
+
+  useEffect(() => {
+    setMyId(getStoredUser()?.id ?? null);
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -181,8 +186,8 @@ export default function UsersPage() {
                     {formatDateTime(user.last_login_at)}
                   </TableCell>
                   <TableCell>
-                    {user.role !== "superadmin" && (
-                      <div className="flex items-center">
+                    <div className="flex items-center">
+                      {(user.role !== "superadmin" || user.id === myId) && (
                         <Button
                           variant="ghost"
                           size="icon"
@@ -192,13 +197,15 @@ export default function UsersPage() {
                           }}>
                           <PencilIcon />
                         </Button>
+                      )}
+                      {user.role !== "superadmin" && user.id !== myId && (
                         <ConfirmDelete
                           onConfirm={() => handleDelete(user)}
                           title="İstifadəçini silmək istəyirsiniz?"
                           description="İstifadəçinin girişi dərhal bağlanacaq."
                         />
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

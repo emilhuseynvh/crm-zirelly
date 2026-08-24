@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { ArchiveRestoreIcon } from "lucide-react";
+
+import { ConfirmDelete } from "@/components/admin/confirm-delete";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +20,8 @@ import {
 } from "@/components/ui/table";
 import { PageHeader } from "@/components/admin/page-header";
 import {
+  useForceDeleteContactMutation,
+  useForceDeleteOrderMutation,
   useGetTrashedContactsQuery,
   useGetTrashedOrdersQuery,
   useRestoreContactMutation,
@@ -52,6 +56,26 @@ export default function TrashPage() {
 
   const [restoreContact] = useRestoreContactMutation();
   const [restoreOrder] = useRestoreOrderMutation();
+  const [forceDeleteContact] = useForceDeleteContactMutation();
+  const [forceDeleteOrder] = useForceDeleteOrderMutation();
+
+  const handleForceDeleteContact = async (id: number) => {
+    try {
+      await forceDeleteContact(id).unwrap();
+      toast.success(`Müştəri #${id} tam silindi.`);
+    } catch (err: any) {
+      toast.error(err?.data?.message ?? "Silinmə alınmadı.");
+    }
+  };
+
+  const handleForceDeleteOrder = async (id: number) => {
+    try {
+      await forceDeleteOrder(id).unwrap();
+      toast.success(`Sifariş #${id} tam silindi.`);
+    } catch (err: any) {
+      toast.error(err?.data?.message ?? "Silinmə alınmadı.");
+    }
+  };
 
   if (isSuperadmin === false) {
     return <p className="text-muted-foreground">Bu bölməyə yalnız superadmin daxil ola bilər.</p>;
@@ -103,7 +127,7 @@ export default function TrashPage() {
                     <TableHead>Telefon</TableHead>
                     <TableHead>E-poçt</TableHead>
                     <TableHead>Mənbə</TableHead>
-                    <TableHead className="w-32" />
+                    <TableHead className="w-44" />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -126,13 +150,20 @@ export default function TrashPage() {
                         <Badge variant="secondary">{CHANNEL_LABELS[contact.channel]}</Badge>
                       </TableCell>
                       <TableCell>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleRestoreContact(contact.id)}>
-                          <ArchiveRestoreIcon />
-                          Bərpa et
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleRestoreContact(contact.id)}>
+                            <ArchiveRestoreIcon />
+                            Bərpa et
+                          </Button>
+                          <ConfirmDelete
+                            onConfirm={() => handleForceDeleteContact(contact.id)}
+                            title={`Müştəri #${contact.id} TAM silinsin?`}
+                            description="Bu əməliyyat geri qaytarıla bilməz — müştəri və qeydləri həmişəlik silinəcək."
+                          />
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -169,7 +200,7 @@ export default function TrashPage() {
                     <TableHead>Kanal</TableHead>
                     <TableHead className="text-right">Yekun</TableHead>
                     <TableHead>Tarix</TableHead>
-                    <TableHead className="w-32" />
+                    <TableHead className="w-44" />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -200,13 +231,20 @@ export default function TrashPage() {
                         {formatDateTime(order.created_at)}
                       </TableCell>
                       <TableCell>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleRestoreOrder(order.id)}>
-                          <ArchiveRestoreIcon />
-                          Bərpa et
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleRestoreOrder(order.id)}>
+                            <ArchiveRestoreIcon />
+                            Bərpa et
+                          </Button>
+                          <ConfirmDelete
+                            onConfirm={() => handleForceDeleteOrder(order.id)}
+                            title={`Sifariş #${order.id} TAM silinsin?`}
+                            description="Bu əməliyyat geri qaytarıla bilməz — sifariş və məhsulları həmişəlik silinəcək."
+                          />
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}

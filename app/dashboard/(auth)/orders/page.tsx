@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { DownloadIcon, EyeIcon, FilterXIcon, PlusIcon, SearchIcon } from "lucide-react";
 import { toast } from "sonner";
 
@@ -25,9 +25,11 @@ import {
   TableRow
 } from "@/components/ui/table";
 import { PageHeader } from "@/components/admin/page-header";
+import { ConfirmDelete } from "@/components/admin/confirm-delete";
 import { API_BASE, getToken } from "@/lib/api/base";
 import {
   buildParams,
+  useDeleteOrderMutation,
   useGetOrdersQuery,
   useUpdateOrderStatusMutation,
   type OrdersFilter
@@ -38,7 +40,8 @@ import {
   STATUS_DOT,
   STATUS_LABELS,
   formatDateTime,
-  formatMoney
+  formatMoney,
+  getStoredUser
 } from "@/lib/crm";
 
 export default function OrdersPage() {
@@ -50,8 +53,23 @@ export default function OrdersPage() {
   const [to, setTo] = useState("");
   const [page, setPage] = useState(1);
   const [exporting, setExporting] = useState(false);
+  const [isSuperadmin, setIsSuperadmin] = useState(false);
 
   const [updateStatus] = useUpdateOrderStatusMutation();
+  const [deleteOrder] = useDeleteOrderMutation();
+
+  useEffect(() => {
+    setIsSuperadmin(getStoredUser()?.role === "superadmin");
+  }, []);
+
+  const handleDelete = async (id: number) => {
+    try {
+      await deleteOrder(id).unwrap();
+      toast.success(`Sifariş #${id} zibil qutusuna atıldı.`);
+    } catch (err: any) {
+      toast.error(err?.data?.message ?? "Silinmə alınmadı.");
+    }
+  };
 
   const filter: OrdersFilter = useMemo(
     () => ({ page, per_page: 20, status, channel, search, from, to }),
@@ -237,7 +255,7 @@ export default function OrdersPage() {
                 <TableHead className="text-right">Məhsul</TableHead>
                 <TableHead className="text-right">Yekun</TableHead>
                 <TableHead>Tarix</TableHead>
-                <TableHead className="w-12" />
+                <TableHead className="w-24" />
               </TableRow>
             </TableHeader>
             <TableBody className={isFetching ? "opacity-60" : undefined}>
@@ -292,11 +310,20 @@ export default function OrdersPage() {
                     {formatDateTime(order.created_at)}
                   </TableCell>
                   <TableCell>
-                    <Button variant="ghost" size="icon" asChild>
-                      <Link href={`/dashboard/orders/${order.id}`}>
-                        <EyeIcon />
-                      </Link>
-                    </Button>
+                    <div className="flex items-center">
+                      <Button variant="ghost" size="icon" asChild>
+                        <Link href={`/dashboard/orders/${order.id}`}>
+                          <EyeIcon />
+                        </Link>
+                      </Button>
+                      {isSuperadmin && (
+                        <ConfirmDelete
+                          onConfirm={() => handleDelete(order.id)}
+                          title={`Sifariş #${order.id} silinsin?`}
+                          description="Sifariş zibil qutusuna atılacaq — oradan bərpa etmək mümkündür."
+                        />
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
