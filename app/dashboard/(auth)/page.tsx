@@ -57,6 +57,7 @@ export default function DashboardPage() {
             <StatCard title="Sifariş sayı" value={String(totals.paid_orders)} />
             <StatCard title="Orta sifariş" value={formatMoney(totals.average_order)} />
             <StatCard title="Çatdırılma yığımı" value={formatMoney(totals.delivery_total)} />
+            <StatCard title="Ümumi müştəri" value={String(totals.customers_total)} />
             <StatCard title="Yeni müştəri" value={String(totals.new_customers)} />
             <StatCard title="Təkrar müştəri" value={String(totals.repeat_customers)} />
             <StatCard title="Ləğv edilmiş" value={String(totals.cancelled_count)} />

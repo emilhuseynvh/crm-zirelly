@@ -118,6 +118,7 @@ export interface ReportSummary {
     returned_count: number;
     new_customers: number;
     repeat_customers: number;
+    customers_total: number;
   };
   by_product: { title: string; quantity: number; revenue: number }[];
   by_channel: { channel: Channel; orders: number; revenue: number }[];

@@ -299,9 +299,11 @@ export default function ContactsPage() {
                   </TableCell>
                 </TableRow>
               )}
-              {data?.data.map((contact) => (
+              {data?.data.map((contact, index) => (
                 <TableRow key={contact.id}>
-                  <TableCell className="font-medium">#{contact.id}</TableCell>
+                  <TableCell className="font-medium">
+                    {(data.meta.current_page - 1) * data.meta.per_page + index + 1}
+                  </TableCell>
                   <TableCell>
                     {contact.name} {contact.surname}
                   </TableCell>
