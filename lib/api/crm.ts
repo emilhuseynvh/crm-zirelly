@@ -130,6 +130,24 @@ export const crmApi = api.injectEndpoints({
       }),
       invalidatesTags: (_r, _e, { id }) => [{ type: "Contact", id }]
     }),
+    updateContactNote: build.mutation<
+      { data: ContactNote },
+      { id: number; noteId: number; body: string }
+    >({
+      query: ({ id, noteId, body }) => ({
+        url: `crm/contacts/${id}/notes/${noteId}`,
+        method: "PUT",
+        body: { body }
+      }),
+      invalidatesTags: (_r, _e, { id }) => [{ type: "Contact", id }]
+    }),
+    deleteContactNote: build.mutation<{ message: string }, { id: number; noteId: number }>({
+      query: ({ id, noteId }) => ({
+        url: `crm/contacts/${id}/notes/${noteId}`,
+        method: "DELETE"
+      }),
+      invalidatesTags: (_r, _e, { id }) => [{ type: "Contact", id }]
+    }),
     getOrders: build.query<Paginated<CrmOrder>, OrdersFilter>({
       query: (filter) => `crm/orders?${buildParams({ ...filter }).toString()}`,
       providesTags: ["Orders"]
@@ -196,6 +214,8 @@ export const {
   useUpdateContactMutation,
   useDeleteContactMutation,
   useAddContactNoteMutation,
+  useUpdateContactNoteMutation,
+  useDeleteContactNoteMutation,
   useGetOrdersQuery,
   useGetOrderQuery,
   useCreateOrderMutation,

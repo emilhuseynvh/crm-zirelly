@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { use, useEffect, useState } from "react";
-import { ArrowLeftIcon, PencilIcon, SendIcon } from "lucide-react";
+import { ArrowLeftIcon, CheckIcon, PencilIcon, SendIcon, Trash2Icon, XIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -24,7 +24,9 @@ import { ContactFormDialog } from "@/components/crm/contact-form-dialog";
 import {
   useAddContactNoteMutation,
   useDeleteContactMutation,
-  useGetContactQuery
+  useDeleteContactNoteMutation,
+  useGetContactQuery,
+  useUpdateContactNoteMutation
 } from "@/lib/api/crm";
 import {
   CHANNEL_LABELS,
@@ -43,13 +45,20 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
 
   const { data, isLoading } = useGetContactQuery(contactId, { skip: Number.isNaN(contactId) });
   const [addNote, { isLoading: addingNote }] = useAddContactNoteMutation();
+  const [updateNote, { isLoading: updatingNote }] = useUpdateContactNoteMutation();
+  const [deleteNote] = useDeleteContactNoteMutation();
   const [deleteContact] = useDeleteContactMutation();
 
   const [noteBody, setNoteBody] = useState("");
+  const [editingNoteId, setEditingNoteId] = useState<number | null>(null);
+  const [editingBody, setEditingBody] = useState("");
   const [isSuperadmin, setIsSuperadmin] = useState(false);
+  const [myId, setMyId] = useState<number | null>(null);
 
   useEffect(() => {
-    setIsSuperadmin(getStoredUser()?.role === "superadmin");
+    const user = getStoredUser();
+    setIsSuperadmin(user?.role === "superadmin");
+    setMyId(user?.id ?? null);
   }, []);
 
   if (isLoading) return <p className="text-muted-foreground">Yüklənir...</p>;
@@ -69,6 +78,27 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
       toast.success("Qeyd əlavə olundu.");
     } catch (err: any) {
       toast.error(err?.data?.message ?? "Qeyd əlavə olunmadı.");
+    }
+  };
+
+  const handleUpdateNote = async (noteId: number) => {
+    if (!editingBody.trim()) return;
+
+    try {
+      await updateNote({ id: contact.id, noteId, body: editingBody.trim() }).unwrap();
+      setEditingNoteId(null);
+      toast.success("Qeyd yeniləndi.");
+    } catch (err: any) {
+      toast.error(err?.data?.message ?? "Qeyd yenilənmədi.");
+    }
+  };
+
+  const handleDeleteNote = async (noteId: number) => {
+    try {
+      await deleteNote({ id: contact.id, noteId }).unwrap();
+      toast.success("Qeyd silindi.");
+    } catch (err: any) {
+      toast.error(err?.data?.message ?? "Qeyd silinmədi.");
     }
   };
 
@@ -156,14 +186,69 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
             </form>
 
             <div className="max-h-64 space-y-2 overflow-y-auto">
-              {contact.notes?.map((note) => (
-                <div key={note.id} className="rounded-md border px-3 py-2 text-sm">
-                  <p className="whitespace-pre-wrap">{note.body}</p>
-                  <p className="text-muted-foreground mt-1 text-xs">
-                    {note.author ?? "—"} · {formatDateTime(note.created_at)}
-                  </p>
-                </div>
-              ))}
+              {contact.notes?.map((note) => {
+                const canManage = isSuperadmin || (myId !== null && note.author_id === myId);
+
+                return (
+                  <div key={note.id} className="rounded-md border px-3 py-2 text-sm">
+                    {editingNoteId === note.id ? (
+                      <div className="flex items-start gap-2">
+                        <Textarea
+                          value={editingBody}
+                          onChange={(e) => setEditingBody(e.target.value)}
+                          rows={2}
+                        />
+                        <div className="flex flex-col gap-1">
+                          <Button
+                            size="icon"
+                            className="size-7"
+                            disabled={updatingNote}
+                            onClick={() => handleUpdateNote(note.id)}>
+                            <CheckIcon />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="size-7"
+                            onClick={() => setEditingNoteId(null)}>
+                            <XIcon />
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="min-w-0 whitespace-pre-wrap">{note.body}</p>
+                          {canManage && (
+                            <div className="flex shrink-0 items-center">
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="size-7"
+                                onClick={() => {
+                                  setEditingNoteId(note.id);
+                                  setEditingBody(note.body);
+                                }}>
+                                <PencilIcon />
+                              </Button>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="text-destructive size-7"
+                                onClick={() => handleDeleteNote(note.id)}>
+                                <Trash2Icon />
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                        <p className="text-muted-foreground mt-1 text-xs">
+                          {note.author ?? "—"} · {formatDateTime(note.created_at)}
+                        </p>
+                      </>
+                    )}
+                  </div>
+                );
+              })}
               {(contact.notes?.length ?? 0) === 0 && (
                 <p className="text-muted-foreground text-sm">Hələ qeyd yoxdur.</p>
               )}
