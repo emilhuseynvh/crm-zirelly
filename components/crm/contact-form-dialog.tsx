@@ -59,6 +59,7 @@ export function ContactFormDialog({ contact, trigger, onSaved }: ContactFormDial
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [birthDate, setBirthDate] = useState("");
+  const [address, setAddress] = useState("");
   const [channel, setChannel] = useState<Channel>("instagram");
   const [duplicate, setDuplicate] = useState<DuplicateInfo | null>(null);
 
@@ -73,6 +74,7 @@ export function ContactFormDialog({ contact, trigger, onSaved }: ContactFormDial
     setPhone(contact?.phone ?? "");
     setEmail(contact?.email ?? "");
     setBirthDate(contact?.birth_date?.slice(0, 10) ?? "");
+    setAddress(contact?.address ?? "");
     setChannel(contact?.channel ?? "instagram");
   }, [open, contact]);
 
@@ -85,6 +87,7 @@ export function ContactFormDialog({ contact, trigger, onSaved }: ContactFormDial
       phone: phone.trim() || null,
       email: email.trim() || null,
       birth_date: birthDate || null,
+      address: address.trim() || null,
       channel
     };
 
@@ -149,6 +152,15 @@ export function ContactFormDialog({ contact, trigger, onSaved }: ContactFormDial
           <div className="space-y-1.5">
             <Label>E-poçt</Label>
             <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Çatdırılma ünvanı</Label>
+            <Input
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              placeholder="Şəhər, küçə, bina, mənzil..."
+            />
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">

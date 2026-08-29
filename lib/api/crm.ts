@@ -67,6 +67,7 @@ export interface ContactPayload {
   phone?: string | null;
   email?: string | null;
   birth_date?: string | null;
+  address?: string | null;
   channel: Channel;
 }
 

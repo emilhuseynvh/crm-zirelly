@@ -308,7 +308,17 @@ export default function ContactsPage() {
                     {contact.name} {contact.surname}
                   </TableCell>
                   <TableCell>{contact.phone ?? "—"}</TableCell>
-                  <TableCell>{contact.email ?? "—"}</TableCell>
+                  <TableCell>
+                    <span className="flex items-center gap-1.5">
+                      {contact.email ?? "—"}
+                      {contact.email_verified === true && (
+                        <span className="text-green-600" title="E-poçt təsdiqlənib">✓</span>
+                      )}
+                      {contact.email_verified === false && (
+                        <span className="text-amber-500" title="E-poçt təsdiqlənməyib">✗</span>
+                      )}
+                    </span>
+                  </TableCell>
                   <TableCell>
                     <Badge variant="secondary">{CHANNEL_LABELS[contact.channel]}</Badge>
                   </TableCell>

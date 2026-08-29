@@ -153,6 +153,17 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
           <CardContent className="space-y-2 text-sm">
             <InfoRow label="Telefon" value={contact.phone} />
             <InfoRow label="E-poçt" value={contact.email} />
+            <InfoRow label="Ünvan" value={contact.address} />
+            <InfoRow
+              label="E-poçt təsdiqi"
+              value={
+                contact.email_verified === null
+                  ? "—"
+                  : contact.email_verified
+                    ? "Təsdiqlənib"
+                    : "Təsdiqlənməyib"
+              }
+            />
             <InfoRow label="Doğum tarixi" value={formatDate(contact.birth_date)} />
             <InfoRow label="Mənbə" value={CHANNEL_LABELS[contact.channel]} />
             <InfoRow label="İlk sifariş" value={formatDate(contact.first_order_at)} />

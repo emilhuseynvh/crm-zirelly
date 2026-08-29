@@ -40,6 +40,8 @@ export interface Contact {
   phone: string | null;
   email: string | null;
   birth_date: string | null;
+  address: string | null;
+  email_verified: boolean | null;
   channel: Channel;
   created_via: "site" | "crm";
   orders_count: number;
