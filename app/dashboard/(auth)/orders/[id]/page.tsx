@@ -339,6 +339,11 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
             <div className="space-y-1.5">
               <Label className="text-muted-foreground text-xs">Ünvan</Label>
               <Textarea value={address} onChange={(e) => setAddress(e.target.value)} rows={2} />
+              {order.address_note && (
+                <p className="text-muted-foreground text-xs">
+                  Müştərinin ünvan qeydi: {order.address_note}
+                </p>
+              )}
             </div>
 
             <div className="space-y-1.5">

@@ -96,6 +96,7 @@ export interface CrmOrder {
   grand_total: number;
   promocode_code: string | null;
   address: string | null;
+  address_note: string | null;
   note: string | null;
   paid_at: string | null;
   created_at: string;
