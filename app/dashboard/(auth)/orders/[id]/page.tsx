@@ -22,13 +22,18 @@ import { PageHeader } from "@/components/admin/page-header";
 import { ConfirmDelete } from "@/components/admin/confirm-delete";
 import {
   useDeleteOrderMutation,
+  useGetOrderAssigneesQuery,
   useGetOrderQuery,
+  useUpdateOrderAssigneeMutation,
   useUpdateOrderMutation,
+  useUpdateOrderReceiptStatusMutation,
   useUpdateOrderStatusMutation
 } from "@/lib/api/crm";
-import type { Channel, OrderStatus } from "@/lib/api/types";
+import type { Channel, OrderStatus, ReceiptStatus, User } from "@/lib/api/types";
 import {
   CHANNEL_LABELS,
+  RECEIPT_DOT,
+  RECEIPT_LABELS,
   STATUS_DOT,
   STATUS_LABELS,
   formatDateTime,
@@ -45,7 +50,10 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   const { data, isLoading } = useGetOrderQuery(orderId, { skip: Number.isNaN(orderId) });
   const [updateOrder, { isLoading: saving }] = useUpdateOrderMutation();
   const [updateStatus] = useUpdateOrderStatusMutation();
+  const [updateAssignee] = useUpdateOrderAssigneeMutation();
+  const [updateReceiptStatus] = useUpdateOrderReceiptStatusMutation();
   const [deleteOrder] = useDeleteOrderMutation();
+  const { data: assignees } = useGetOrderAssigneesQuery();
 
   const order = data?.data;
 
@@ -54,11 +62,13 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   const [discount, setDiscount] = useState("");
   const [address, setAddress] = useState("");
   const [note, setNote] = useState("");
-  const [isSuperadmin, setIsSuperadmin] = useState(false);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   useEffect(() => {
-    setIsSuperadmin(getStoredUser()?.role === "superadmin");
+    setCurrentUser(getStoredUser());
   }, []);
+
+  const isSuperadmin = currentUser?.role === "superadmin";
 
   useEffect(() => {
     if (!order) return;
@@ -94,6 +104,29 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
       toast.success(`Status: ${STATUS_LABELS[next]}`);
     } catch (err: any) {
       toast.error(err?.data?.message ?? "Status dəyişdirilə bilmədi.");
+    }
+  };
+
+  const handleAssignee = async (value: string) => {
+    try {
+      const assignee_id = value === "none" ? null : Number(value);
+      const result = await updateAssignee({ id: order.id, assignee_id }).unwrap();
+      toast.success(
+        assignee_id === null
+          ? "Məsul şəxs boşaldıldı."
+          : `Məsul şəxs: ${result.data.assignee?.name ?? ""}`
+      );
+    } catch (err: any) {
+      toast.error(err?.data?.message ?? "Məsul şəxs dəyişdirilə bilmədi.");
+    }
+  };
+
+  const handleReceipt = async (next: ReceiptStatus) => {
+    try {
+      await updateReceiptStatus({ id: order.id, receipt_status: next }).unwrap();
+      toast.success(`Çek statusu: ${RECEIPT_LABELS[next]}`);
+    } catch (err: any) {
+      toast.error(err?.data?.message ?? "Çek statusu dəyişdirilə bilmədi.");
     }
   };
 
@@ -213,6 +246,58 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
             <CardTitle>Sifariş məlumatları</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label className="text-muted-foreground text-xs">Məsul şəxs</Label>
+                <Select
+                  value={order.assignee ? String(order.assignee.id) : "none"}
+                  onValueChange={handleAssignee}>
+                  <SelectTrigger className="w-full">
+                    <span className="truncate">{order.assignee?.name ?? "— Boş"}</span>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">— Boş</SelectItem>
+                    {isSuperadmin
+                      ? assignees?.data.map((a) => (
+                          <SelectItem key={a.id} value={String(a.id)}>
+                            {a.name}
+                          </SelectItem>
+                        ))
+                      : currentUser && (
+                          <SelectItem value={String(currentUser.id)}>
+                            {currentUser.name} (mən)
+                          </SelectItem>
+                        )}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-muted-foreground text-xs">Çek statusu</Label>
+                <Select
+                  value={order.receipt_status}
+                  onValueChange={(v) => handleReceipt(v as ReceiptStatus)}>
+                  <SelectTrigger className="w-full">
+                    <span className="flex items-center gap-2">
+                      <span
+                        className={`size-2 shrink-0 rounded-full ${RECEIPT_DOT[order.receipt_status]}`}
+                      />
+                      {RECEIPT_LABELS[order.receipt_status]}
+                    </span>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(Object.keys(RECEIPT_LABELS) as ReceiptStatus[]).map((r) => (
+                      <SelectItem key={r} value={r}>
+                        <span
+                          className={`mr-1 inline-block size-2 rounded-full ${RECEIPT_DOT[r]}`}
+                        />
+                        {RECEIPT_LABELS[r]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
             <div className="grid gap-3 sm:grid-cols-3">
               <div className="space-y-1.5">
                 <Label className="text-muted-foreground text-xs">Satış kanalı</Label>

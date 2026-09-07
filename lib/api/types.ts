@@ -7,6 +7,8 @@ export type OrderStatus =
   | "returned"
   | "cancelled";
 
+export type ReceiptStatus = "pending" | "registered" | "sent";
+
 export type Channel = "website" | "instagram" | "whatsapp" | "phone" | "other";
 
 export type CrmSection = "dashboard" | "contacts" | "orders" | "reports" | "audit";
@@ -71,9 +73,16 @@ export interface StatusHistoryEntry {
   created_at: string;
 }
 
+export interface OrderAssignee {
+  id: number;
+  name: string;
+}
+
 export interface CrmOrder {
   id: number;
   status: OrderStatus;
+  receipt_status: ReceiptStatus;
+  assignee: OrderAssignee | null;
   channel: Channel;
   contact_id: number | null;
   customer: string | null;

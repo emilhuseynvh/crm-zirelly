@@ -1,4 +1,4 @@
-import type { Channel, CrmSection, OrderStatus, User } from "@/lib/api/types";
+import type { Channel, CrmSection, OrderStatus, ReceiptStatus, User } from "@/lib/api/types";
 
 export const STATUS_LABELS: Record<OrderStatus, string> = {
   pending: "Gözləyir",
@@ -18,6 +18,18 @@ export const STATUS_DOT: Record<OrderStatus, string> = {
   delivered: "bg-green-500",
   returned: "bg-orange-500",
   cancelled: "bg-red-500"
+};
+
+export const RECEIPT_LABELS: Record<ReceiptStatus, string> = {
+  pending: "Gözləyir",
+  registered: "Kassaya vuruldu",
+  sent: "Müştəriyə göndərildi"
+};
+
+export const RECEIPT_DOT: Record<ReceiptStatus, string> = {
+  pending: "bg-amber-500",
+  registered: "bg-blue-500",
+  sent: "bg-green-500"
 };
 
 export const CHANNEL_LABELS: Record<Channel, string> = {

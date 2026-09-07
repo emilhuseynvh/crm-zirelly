@@ -32,6 +32,8 @@ const ACTION_LABELS: Record<string, string> = {
   order_created: "Sifariş yaradıldı",
   order_updated: "Sifariş dəyişdirildi",
   order_status_changed: "Status dəyişdirildi",
+  order_assignee_changed: "Məsul şəxs dəyişdirildi",
+  order_receipt_status_changed: "Çek statusu dəyişdirildi",
   order_deleted: "Sifariş silindi",
   order_restored: "Sifariş bərpa olundu",
   order_force_deleted: "Sifariş tam silindi",

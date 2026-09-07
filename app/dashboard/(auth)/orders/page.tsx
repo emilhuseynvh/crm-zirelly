@@ -30,13 +30,18 @@ import { API_BASE, getToken } from "@/lib/api/base";
 import {
   buildParams,
   useDeleteOrderMutation,
+  useGetOrderAssigneesQuery,
   useGetOrdersQuery,
+  useUpdateOrderAssigneeMutation,
+  useUpdateOrderReceiptStatusMutation,
   useUpdateOrderStatusMutation,
   type OrdersFilter
 } from "@/lib/api/crm";
-import type { Channel, OrderStatus } from "@/lib/api/types";
+import type { Channel, OrderStatus, ReceiptStatus, User } from "@/lib/api/types";
 import {
   CHANNEL_LABELS,
+  RECEIPT_DOT,
+  RECEIPT_LABELS,
   STATUS_DOT,
   STATUS_LABELS,
   formatDateTime,
@@ -46,6 +51,8 @@ import {
 
 export default function OrdersPage() {
   const [status, setStatus] = useState<OrderStatus | "">("");
+  const [receiptStatus, setReceiptStatus] = useState<ReceiptStatus | "">("");
+  const [assigneeId, setAssigneeId] = useState<string>("");
   const [channel, setChannel] = useState<Channel | "">("");
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
@@ -53,14 +60,19 @@ export default function OrdersPage() {
   const [to, setTo] = useState("");
   const [page, setPage] = useState(1);
   const [exporting, setExporting] = useState(false);
-  const [isSuperadmin, setIsSuperadmin] = useState(false);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   const [updateStatus] = useUpdateOrderStatusMutation();
+  const [updateAssignee] = useUpdateOrderAssigneeMutation();
+  const [updateReceiptStatus] = useUpdateOrderReceiptStatusMutation();
   const [deleteOrder] = useDeleteOrderMutation();
+  const { data: assignees } = useGetOrderAssigneesQuery();
 
   useEffect(() => {
-    setIsSuperadmin(getStoredUser()?.role === "superadmin");
+    setCurrentUser(getStoredUser());
   }, []);
+
+  const isSuperadmin = currentUser?.role === "superadmin";
 
   const handleDelete = async (id: number) => {
     try {
@@ -72,16 +84,30 @@ export default function OrdersPage() {
   };
 
   const filter: OrdersFilter = useMemo(
-    () => ({ page, per_page: 20, status, channel, search, from, to }),
-    [page, status, channel, search, from, to]
+    () => ({
+      page,
+      per_page: 20,
+      status,
+      receipt_status: receiptStatus,
+      assignee_id: assigneeId as OrdersFilter["assignee_id"],
+      channel,
+      search,
+      from,
+      to
+    }),
+    [page, status, receiptStatus, assigneeId, channel, search, from, to]
   );
 
   const { data, isLoading, isFetching } = useGetOrdersQuery(filter);
 
-  const hasFilters = Boolean(status || channel || search || from || to);
+  const hasFilters = Boolean(
+    status || receiptStatus || assigneeId || channel || search || from || to
+  );
 
   const resetFilters = () => {
     setStatus("");
+    setReceiptStatus("");
+    setAssigneeId("");
     setChannel("");
     setSearch("");
     setSearchInput("");
@@ -99,11 +125,42 @@ export default function OrdersPage() {
     }
   };
 
+  const handleAssigneeChange = async (id: number, value: string) => {
+    try {
+      const assignee_id = value === "none" ? null : Number(value);
+      const result = await updateAssignee({ id, assignee_id }).unwrap();
+      toast.success(
+        assignee_id === null
+          ? `#${id}: məsul şəxs boşaldıldı`
+          : `#${id}: məsul şəxs — ${result.data.assignee?.name ?? ""}`
+      );
+    } catch (err: any) {
+      toast.error(err?.data?.message ?? "Məsul şəxs dəyişdirilə bilmədi.");
+    }
+  };
+
+  const handleReceiptChange = async (id: number, next: ReceiptStatus) => {
+    try {
+      await updateReceiptStatus({ id, receipt_status: next }).unwrap();
+      toast.success(`#${id}: çek — ${RECEIPT_LABELS[next]}`);
+    } catch (err: any) {
+      toast.error(err?.data?.message ?? "Çek statusu dəyişdirilə bilmədi.");
+    }
+  };
+
   const handleExport = async () => {
     setExporting(true);
 
     try {
-      const params = buildParams({ status, channel, search, from, to });
+      const params = buildParams({
+        status,
+        receipt_status: receiptStatus,
+        assignee_id: assigneeId,
+        channel,
+        search,
+        from,
+        to
+      });
       const token = getToken();
       const response = await fetch(`${API_BASE}/crm/orders/export?${params.toString()}`, {
         headers: {
@@ -211,6 +268,46 @@ export default function OrdersPage() {
               </SelectContent>
             </Select>
 
+            <Select
+              value={assigneeId || "all"}
+              onValueChange={(v) => {
+                setAssigneeId(v === "all" ? "" : v);
+                setPage(1);
+              }}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Məsul şəxs" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Məsul şəxs: hamısı</SelectItem>
+                <SelectItem value="none">Boş (məsul yoxdur)</SelectItem>
+                {assignees?.data.map((a) => (
+                  <SelectItem key={a.id} value={String(a.id)}>
+                    {a.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={receiptStatus || "all"}
+              onValueChange={(v) => {
+                setReceiptStatus(v === "all" ? "" : (v as ReceiptStatus));
+                setPage(1);
+              }}>
+              <SelectTrigger className="w-44">
+                <SelectValue placeholder="Çek statusu" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Çek: hamısı</SelectItem>
+                {(Object.keys(RECEIPT_LABELS) as ReceiptStatus[]).map((r) => (
+                  <SelectItem key={r} value={r}>
+                    <span className={`mr-1 inline-block size-2 rounded-full ${RECEIPT_DOT[r]}`} />
+                    {RECEIPT_LABELS[r]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
             <Input
               type="date"
               className="w-36"
@@ -252,8 +349,10 @@ export default function OrdersPage() {
                 <TableHead>Müştəri</TableHead>
                 <TableHead>Kanal</TableHead>
                 <TableHead className="w-56">Status</TableHead>
+                <TableHead className="w-40">Məsul şəxs</TableHead>
                 <TableHead className="text-right">Məhsul</TableHead>
                 <TableHead className="text-right">Yekun</TableHead>
+                <TableHead className="w-44">Çek statusu</TableHead>
                 <TableHead>Tarix</TableHead>
                 <TableHead className="w-24" />
               </TableRow>
@@ -261,7 +360,7 @@ export default function OrdersPage() {
             <TableBody className={isFetching ? "opacity-60" : undefined}>
               {isLoading && (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-muted-foreground py-8 text-center">
+                  <TableCell colSpan={10} className="text-muted-foreground py-8 text-center">
                     Yüklənir...
                   </TableCell>
                 </TableRow>
@@ -302,9 +401,56 @@ export default function OrdersPage() {
                       </SelectContent>
                     </Select>
                   </TableCell>
+                  <TableCell>
+                    <Select
+                      value={order.assignee ? String(order.assignee.id) : "none"}
+                      onValueChange={(v) => handleAssigneeChange(order.id, v)}>
+                      <SelectTrigger size="sm" className="w-full">
+                        <span className="truncate">{order.assignee?.name ?? "—"}</span>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">— Boş</SelectItem>
+                        {isSuperadmin
+                          ? assignees?.data.map((a) => (
+                              <SelectItem key={a.id} value={String(a.id)}>
+                                {a.name}
+                              </SelectItem>
+                            ))
+                          : currentUser && (
+                              <SelectItem value={String(currentUser.id)}>
+                                {currentUser.name} (mən)
+                              </SelectItem>
+                            )}
+                      </SelectContent>
+                    </Select>
+                  </TableCell>
                   <TableCell className="text-right">{order.items_count}</TableCell>
                   <TableCell className="text-right font-medium">
                     {formatMoney(order.grand_total)}
+                  </TableCell>
+                  <TableCell>
+                    <Select
+                      value={order.receipt_status}
+                      onValueChange={(v) => handleReceiptChange(order.id, v as ReceiptStatus)}>
+                      <SelectTrigger size="sm" className="w-full">
+                        <span className="flex items-center gap-2">
+                          <span
+                            className={`size-2 shrink-0 rounded-full ${RECEIPT_DOT[order.receipt_status]}`}
+                          />
+                          {RECEIPT_LABELS[order.receipt_status]}
+                        </span>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(Object.keys(RECEIPT_LABELS) as ReceiptStatus[]).map((r) => (
+                          <SelectItem key={r} value={r}>
+                            <span
+                              className={`mr-1 inline-block size-2 rounded-full ${RECEIPT_DOT[r]}`}
+                            />
+                            {RECEIPT_LABELS[r]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </TableCell>
                   <TableCell className="text-muted-foreground text-sm">
                     {formatDateTime(order.created_at)}
@@ -329,7 +475,7 @@ export default function OrdersPage() {
               ))}
               {data && data.data.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-muted-foreground py-8 text-center">
+                  <TableCell colSpan={10} className="text-muted-foreground py-8 text-center">
                     Sifariş tapılmadı.
                   </TableCell>
                 </TableRow>

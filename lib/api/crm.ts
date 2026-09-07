@@ -6,8 +6,10 @@ import type {
   ContactNote,
   CrmOrder,
   CrmSection,
+  OrderAssignee,
   OrderStatus,
   Paginated,
+  ReceiptStatus,
   ReportSummary,
   User
 } from "./types";
@@ -33,6 +35,8 @@ export interface OrdersFilter extends DateRange {
   per_page?: number;
   search?: string;
   status?: OrderStatus | "";
+  receipt_status?: ReceiptStatus | "";
+  assignee_id?: number | "none" | "";
   channel?: Channel | "";
   sort?: "id" | "total" | "created_at";
   dir?: "asc" | "desc";
@@ -173,6 +177,32 @@ export const crmApi = api.injectEndpoints({
       }),
       invalidatesTags: (_r, _e, { id }) => ["Orders", "Report", { type: "Order", id }]
     }),
+    updateOrderAssignee: build.mutation<
+      { data: CrmOrder },
+      { id: number; assignee_id: number | null }
+    >({
+      query: ({ id, assignee_id }) => ({
+        url: `crm/orders/${id}/assignee`,
+        method: "PUT",
+        body: { assignee_id }
+      }),
+      invalidatesTags: (_r, _e, { id }) => ["Orders", { type: "Order", id }]
+    }),
+    updateOrderReceiptStatus: build.mutation<
+      { data: CrmOrder },
+      { id: number; receipt_status: ReceiptStatus }
+    >({
+      query: ({ id, receipt_status }) => ({
+        url: `crm/orders/${id}/receipt-status`,
+        method: "PUT",
+        body: { receipt_status }
+      }),
+      invalidatesTags: (_r, _e, { id }) => ["Orders", { type: "Order", id }]
+    }),
+    getOrderAssignees: build.query<{ data: (OrderAssignee & { is_active: boolean })[] }, void>({
+      query: () => "crm/orders/assignees",
+      providesTags: ["Users"]
+    }),
     deleteOrder: build.mutation<{ message: string }, number>({
       query: (id) => ({ url: `crm/orders/${id}`, method: "DELETE" }),
       invalidatesTags: ["Orders", "Report"]
@@ -270,6 +300,9 @@ export const {
   useCreateOrderMutation,
   useUpdateOrderMutation,
   useUpdateOrderStatusMutation,
+  useUpdateOrderAssigneeMutation,
+  useUpdateOrderReceiptStatusMutation,
+  useGetOrderAssigneesQuery,
   useDeleteOrderMutation,
   useGetCrmUsersQuery,
   useCreateCrmUserMutation,
