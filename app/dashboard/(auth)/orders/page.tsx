@@ -351,7 +351,9 @@ export default function OrdersPage() {
                 <TableHead className="w-56">Status</TableHead>
                 <TableHead className="w-40">Məsul şəxs</TableHead>
                 <TableHead className="text-right">Məhsul</TableHead>
-                <TableHead className="text-right">Yekun</TableHead>
+                <TableHead className="text-right">Məhsulların məbləği</TableHead>
+                <TableHead className="text-right">Çatdırılma haqqı</TableHead>
+                <TableHead className="text-right">Ümumi ödəniş</TableHead>
                 <TableHead className="w-44">Çek statusu</TableHead>
                 <TableHead>Tarix</TableHead>
                 <TableHead className="w-24" />
@@ -360,7 +362,7 @@ export default function OrdersPage() {
             <TableBody className={isFetching ? "opacity-60" : undefined}>
               {isLoading && (
                 <TableRow>
-                  <TableCell colSpan={10} className="text-muted-foreground py-8 text-center">
+                  <TableCell colSpan={12} className="text-muted-foreground py-8 text-center">
                     Yüklənir...
                   </TableCell>
                 </TableRow>
@@ -425,6 +427,10 @@ export default function OrdersPage() {
                     </Select>
                   </TableCell>
                   <TableCell className="text-right">{order.items_count}</TableCell>
+                  <TableCell className="text-right">{formatMoney(order.total)}</TableCell>
+                  <TableCell className="text-right">
+                    {order.delivery_fee > 0 ? formatMoney(order.delivery_fee) : "Pulsuz"}
+                  </TableCell>
                   <TableCell className="text-right font-medium">
                     {formatMoney(order.grand_total)}
                   </TableCell>
@@ -475,7 +481,7 @@ export default function OrdersPage() {
               ))}
               {data && data.data.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={10} className="text-muted-foreground py-8 text-center">
+                  <TableCell colSpan={12} className="text-muted-foreground py-8 text-center">
                     Sifariş tapılmadı.
                   </TableCell>
                 </TableRow>

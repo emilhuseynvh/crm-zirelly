@@ -213,12 +213,16 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                   <span>−{formatMoney(order.discount_amount)}</span>
                 </div>
               )}
-              <div className="flex justify-between">
-                <span>Çatdırılma</span>
-                <span>{formatMoney(order.delivery_fee)}</span>
+              <div className="text-foreground flex justify-between border-t pt-2">
+                <span>Məhsulların məbləği</span>
+                <span>{formatMoney(order.total)}</span>
+              </div>
+              <div className="text-foreground flex justify-between">
+                <span>Çatdırılma haqqı</span>
+                <span>{order.delivery_fee > 0 ? formatMoney(order.delivery_fee) : "Pulsuz"}</span>
               </div>
               <div className="text-foreground flex justify-between border-t pt-2 text-base font-semibold">
-                <span>Yekun</span>
+                <span>Ümumi ödəniş</span>
                 <span>{formatMoney(order.grand_total)}</span>
               </div>
             </div>
